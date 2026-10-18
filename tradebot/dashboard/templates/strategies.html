@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Strategies{% endblock %}
+{% block content %}
+<h1>Strategy management</h1>
+<p class="muted">Turning a strategy off stops NEW entries from it; existing positions keep their exits and stops. Parameter changes
+  apply from the next daily cycle. Changing parameters after looking at backtest results is a form of curve-fitting - prefer the
+  research run's walk-forward evidence.</p>
+{% for st in items %}
+<div class="card">
+  <h2>{{ st.name }} <span class="tag {{ 'ok' if st.enabled else '' }}">{{ 'enabled' if st.enabled else 'disabled' }}</span></h2>
+  <p>{{ st.summary }}</p>
+  <details><summary>Full documentation (behaviour, rules, stops, risks)</summary>
+    <table>{% for k, v in st.documentation.items() %}<tr><td><b>{{ k|capitalize }}</b></td><td>{{ v }}</td></tr>{% endfor %}</table>
+  </details>
+  <form method="post" action="/action/strategy">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="key" value="{{ st.key }}">
+    <label class="field"><input type="checkbox" name="enabled" {{ 'checked' if st.enabled }}> Enabled</label>
+    <table><tr><th>Parameter</th><th>Value</th><th>Allowed</th><th>Default</th><th>Meaning</th></tr>
+    {% for p in st.params %}<tr><td>{{ p.name }}</td>
+      <td><input name="p_{{ p.name }}" value="{{ p.value }}" size="7" inputmode="decimal"></td>
+      <td class="muted">{{ p.min }} - {{ p.max }}</td><td class="muted">{{ p.default }}</td><td>{{ p.description }}</td></tr>{% endfor %}</table>
+    <label class="field"><input type="checkbox" name="confirm"> I understand parameter changes alter how the bot trades</label>
+    <label class="field"><input type="checkbox" name="reset_defaults"> Reset all parameters to defaults</label>
+    <button>Save</button>
+  </form>
+</div>
+{% endfor %}
+{% endblock %}

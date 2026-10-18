@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}History{% endblock %}
+{% block content %}
+<h1>Trading history (paper)</h1>
+<div class="card"><h2>Executions (simulated fills)</h2>
+<table><tr><th>Date</th><th>Side</th><th>Symbol</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Value £</th><th class="num">Commission</th><th class="num">Stamp duty</th><th class="num">Other/FX</th><th class="num">Spread/slip.</th><th>Purpose</th><th>Execution assumption</th></tr>
+{% for f in fills %}<tr><td>{{ f.trade_date }}</td><td>{{ f.side }}</td><td>{{ f.symbol }}</td><td class="num">{{ f.quantity|num(0) }}</td><td class="num">{{ f.price|num(4) }}</td>
+<td class="num">{{ f.gross_gbp|num(2) }}</td><td class="num">{{ f.commission_gbp|num(2) }}</td><td class="num">{{ f.stamp_duty_gbp|num(2) }}</td><td class="num">{{ (f.other_fees_gbp + f.fx_cost_gbp)|num(2) }}</td>
+<td class="num">{{ f.spread_slippage_gbp|num(2) }}</td><td>{{ f.purpose }}<div class="muted">{{ f.reason or '' }}</div></td><td class="muted">{{ f.execution_note }}</td></tr>
+{% else %}<tr><td colspan="12" class="muted">No fills yet.</td></tr>{% endfor %}</table></div>
+
+<div class="card"><h2>All orders</h2>
+<table><tr><th>Decided</th><th>Symbol</th><th>Side</th><th>Type</th><th class="num">Qty</th><th class="num">Filled</th><th class="num">Avg fill</th><th>Stop</th><th>Purpose</th><th>Status</th><th>Reason</th></tr>
+{% for o in orders %}<tr><td>{{ o.created_for_date }}</td><td>{{ o.symbol }}</td><td>{{ o.side }}</td><td>{{ o.order_type }}</td><td class="num">{{ o.quantity|num(0) }}</td>
+<td class="num">{{ o.filled_quantity|num(0) }}</td><td class="num">{{ o.avg_fill_price|num(4) if o.avg_fill_price else '' }}</td><td>{{ o.stop_price|num(4) if o.stop_price else '' }}</td>
+<td>{{ o.purpose }}</td><td><span class="tag {{ o.status }}">{{ o.status }}</span></td><td class="muted">{{ o.reason or '' }}</td></tr>
+{% else %}<tr><td colspan="11" class="muted">No orders yet.</td></tr>{% endfor %}</table></div>
+
+<div class="card"><h2>UK tax records - ESTIMATE ONLY</h2>
+<p class="notice">Record-keeping aid using HMRC's same-day, 30-day and Section 104 matching rules. Not a tax calculation and does not decide your tax position.
+  This is a <b>simulated</b> account, so no real disposals have occurred. See docs/UK_TAX_AND_ACCOUNTS.md.</p>
+<table><tr><th>Tax year</th><th class="num">Disposals</th><th class="num">Proceeds</th><th class="num">Gains</th><th class="num">Losses</th><th class="num">Net</th><th class="num">Annual exempt amount</th><th class="num">Dividends</th><th>Note</th></tr>
+{% for y in tax.years %}<tr><td>{{ y.tax_year }}</td><td class="num">{{ y.disposals }}</td><td class="num">{{ y.total_proceeds_gbp|money }}</td><td class="num">{{ y.gains_gbp|money }}</td>
+<td class="num">{{ y.losses_gbp|money }}</td><td class="num">{{ y.net_gain_gbp|money }}</td><td class="num">{{ y.annual_exempt_amount_gbp|money }}</td><td class="num">{{ y.dividends_gbp|money }}</td><td class="muted">{{ y.note }}</td></tr>
+{% else %}<tr><td colspan="9" class="muted">No disposals yet.</td></tr>{% endfor %}</table>
+<details><summary>Matched disposals</summary><table><tr><th>Date</th><th>Symbol</th><th class="num">Qty</th><th class="num">Proceeds</th><th class="num">Allowable cost</th><th class="num">Gain</th><th>Rule</th></tr>
+{% for d in tax.disposals %}<tr><td>{{ d.date }}</td><td>{{ d.symbol }}</td><td class="num">{{ d.quantity|num(0) }}</td><td class="num">{{ d.proceeds_gbp|money }}</td><td class="num">{{ d.cost_gbp|money }}</td><td class="num">{{ d.gain_gbp|money }}</td><td>{{ d.rule }}</td></tr>{% endfor %}</table></details>
+<form method="post" action="/action/export"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="secondary">Export everything to CSV</button></form>
+</div>
+{% endblock %}

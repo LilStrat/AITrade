@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Backtesting{% endblock %}
+{% block content %}
+<h1>Backtesting</h1>
+<p class="notice"><b>Historical simulation - not paper or real trading.</b> Results describe the past under stated assumptions and are
+  biased upwards by survivorship (today's companies only). Use <b>Research</b> runs for decisions: they keep a holdout period unseen.</p>
+<div class="grid g2">
+<div class="card"><h2>New run</h2>
+<form method="post" action="/action/backtest"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <label class="field">Kind
+    <select name="kind"><option value="single">Single backtest</option><option value="research">Research: walk-forward + holdout (first ticked strategy, slower)</option></select></label>
+  <div>Strategies: {% for k, cls in strategies.items() %}<label><input type="checkbox" name="s_{{ k }}" checked> {{ cls.name }}</label><br>{% endfor %}</div>
+  <label class="field">Start <input type="date" name="start" value="2014-01-01"> End <input type="date" name="end" value="{{ today }}"></label>
+  <label class="field">Starting capital £ <input name="capital" value="10000" size="8"></label>
+  <label class="field">Cost profile <select name="cost_profile">{% for k in ['ibkr_uk_fixed', 'trading212', 'zero_cost'] %}<option>{{ k }}</option>{% endfor %}</select></label>
+  <details><summary>Instruments (default: all enabled; {{ have|length }} have stored data)</summary>
+    {% for u in universe %}<label><input type="checkbox" name="symbols" value="{{ u.symbol }}"> {{ u.symbol }} {{ '' if u.symbol in have else '(no data)' }}</label> {% endfor %}</details>
+  <label class="field"><input type="checkbox" name="synthetic"> Use SYNTHETIC data (tests the machinery only - results mean nothing)</label>
+  <button>Run</button>
+</form></div>
+<div class="card"><h2>Previous runs</h2>
+<table>{% for r in runs %}<tr><td><a href="/backtest?run={{ r.id }}">#{{ r.id }}</a></td><td>{{ r.created_at[:16] }}</td><td>{{ r.label }}</td><td><span class="tag {{ 'ok' if r.status == 'done' else 'error' if r.status == 'failed' else 'warning' }}">{{ r.status }}</span></td></tr>
+{% else %}<tr><td class="muted">None yet.</td></tr>{% endfor %}</table></div>
+</div>
+
+{% if sel %}
+<div class="card"><h2>Run #{{ sel.id }}: {{ sel.label }}</h2>
+{% if sel.status == 'running' %}<p>Running… <a href="">refresh</a></p>{% elif sel.status == 'failed' %}<p class="neg">Failed: {{ sel.error }}</p>{% endif %}
+{% set res = sel.result %}
+{% if res %}
+  <p class="muted">{{ res.data_source_note }}</p>
+  {% if res.kind == 'research' %}
+    <div class="notice"><b>Verdict: {{ res.verdict }}</b> - {{ res.verdict_text }}
+      <ul class="tight">{% for x in res.verdict_reasons %}<li>{{ x }}</li>{% endfor %}</ul></div>
+    <p>Development {{ res.development[0] }} → {{ res.development[1] }} · Holdout (unseen) {{ res.holdout[0] }} → {{ res.holdout[1] }} ·
+       Walk-forward out-of-sample: <b>{{ res.walk_forward_oos_return_pct|pct }}</b> · Chosen params: {{ res.chosen_params or 'defaults' }}</p>
+    {{ chart|safe }}
+    <table><tr><th>Holdout</th><th class="num">Return</th><th class="num">Before costs</th><th class="num">Max DD</th><th class="num">Sharpe</th><th class="num">Trades</th><th class="num">Win %</th><th class="num">Profit factor</th><th class="num">Costs</th><th class="num">Benchmark</th><th class="num">Cash</th></tr>
+    {% for name, h in [('Default params', res.holdout_default), ('Chosen params', res.holdout_chosen)] %}
+      <tr><td>{{ name }}</td><td class="num">{{ h.total_return_pct|pct }}</td><td class="num">{{ h.gross_before_costs_return_pct|pct }}</td><td class="num">{{ h.max_drawdown_pct|num }}%</td><td class="num">{{ h.sharpe|num }}</td>
+      <td class="num">{{ h.trades }}</td><td class="num">{{ h.win_rate_pct|num(1) }}</td><td class="num">{{ h.profit_factor|num }}</td><td class="num">{{ h.costs_gbp|money }}</td>
+      <td class="num">{{ h.benchmark_return_pct|pct }}</td><td class="num">{{ h.cash_return_pct|pct }}</td></tr>{% endfor %}</table>
+    <h3>Walk-forward windows</h3>
+    <table><tr><th>Train</th><th>Test</th><th>Chosen</th><th class="num">OOS return</th><th class="num">Trades</th></tr>
+    {% for w in res.walk_forward %}<tr><td>{{ w.train|join(' → ') }}</td><td>{{ w.test|join(' → ') }}</td><td>{{ w.chosen_params or 'defaults' }}</td><td class="num">{{ w.oos.total_return_pct|pct }}</td><td class="num">{{ w.oos.trades }}</td></tr>{% endfor %}</table>
+    <h3>Parameter sensitivity (development period)</h3>
+    <table><tr><th>Params</th><th class="num">Return</th><th class="num">Max DD</th><th class="num">Trades</th><th class="num">PF</th></tr>
+    {% for x in res.sensitivity %}<tr><td>{{ x.params }}</td><td class="num">{{ x.total_return_pct|pct }}</td><td class="num">{{ x.max_drawdown_pct|num }}%</td><td class="num">{{ x.trades }}</td><td class="num">{{ x.profit_factor|num }}</td></tr>{% endfor %}</table>
+    {% if res.report_file %}<p>Full report: <a href="/reports?view={{ res.report_file }}">{{ res.report_file }}</a></p>{% endif %}
+    <ul class="tight muted">{% for n in res.notes %}<li>{{ n }}</li>{% endfor %}</ul>
+  {% else %}
+    {% set m = res.metrics_after_costs %}{% set g = res.metrics_before_costs_approx %}{% set t = res.trade_metrics %}{% set b = res.benchmark.metrics %}
+    {{ chart|safe }}
+    <div class="grid g2"><div>
+    <table>
+      <tr><th></th><th class="num">After costs</th><th class="num">Before costs (approx.)</th><th class="num">Benchmark {{ res.benchmark.symbol }}</th></tr>
+      <tr><td>Total return</td><td class="num">{{ m.total_return_pct|pct }}</td><td class="num">{{ g.total_return_pct|pct }}</td><td class="num">{{ b.total_return_pct|pct }}</td></tr>
+      <tr><td>Annualised</td><td class="num">{{ m.annualised_return_pct|pct if m.annualised_return_pct is not none else 'n/a (<1y)' }}</td><td class="num">{{ g.annualised_return_pct|pct }}</td><td class="num">{{ b.annualised_return_pct|pct }}</td></tr>
+      <tr><td>Max drawdown</td><td class="num">{{ m.max_drawdown_pct|num }}%</td><td class="num">{{ g.max_drawdown_pct|num }}%</td><td class="num">{{ b.max_drawdown_pct|num }}%</td></tr>
+      <tr><td>Sharpe (vs cash rate)*</td><td class="num">{{ m.sharpe|num }}</td><td class="num">{{ g.sharpe|num }}</td><td class="num">{{ b.sharpe|num }}</td></tr>
+      <tr><td>Sortino</td><td class="num">{{ m.sortino|num }}</td><td class="num">{{ g.sortino|num }}</td><td class="num">{{ b.sortino|num }}</td></tr>
+      <tr><td>Volatility</td><td class="num">{{ m.volatility_pct|num }}%</td><td></td><td class="num">{{ b.volatility_pct|num }}%</td></tr>
+      <tr><td>Cash benchmark end value</td><td class="num">{{ res.cash_benchmark.end_equity|money }}</td><td></td><td></td></tr>
+    </table>
+    <p class="muted">*Sharpe assumes normally distributed returns and is unreliable for few trades or low exposure.</p>
+    </div><div>
+    <table>
+      <tr><td>Closed trades</td><td class="num">{{ t.trades }}{% if t.open_trades %} (+{{ t.open_trades }} open at end){% endif %}</td></tr>
+      <tr><td>Win rate</td><td class="num">{{ t.win_rate_pct|num(1) }}%</td></tr>
+      <tr><td>Average win / loss</td><td class="num">{{ t.avg_win_gbp|money }} / {{ t.avg_loss_gbp|money }}</td></tr>
+      <tr><td>Largest loss</td><td class="num">{{ t.largest_loss_gbp|money }}</td></tr>
+      <tr><td>Profit factor</td><td class="num">{{ t.profit_factor|num }}</td></tr>
+      <tr><td>Average holding</td><td class="num">{{ t.avg_holding_sessions|num(1) }} sessions</td></tr>
+      <tr><td>Market exposure</td><td class="num">{{ res.exposure_pct|num(1) }}%</td></tr>
+      <tr><td>Stop-loss exits / gap fills</td><td class="num">{{ t.stopped_out_pct|num(0) }}% / {{ t.gap_stop_fills }}</td></tr>
+      <tr><td>Total costs</td><td class="num">{{ res.costs.total_gbp|money }} ({{ res.costs.pct_of_starting_capital|num(2) }}% of capital)</td></tr>
+      <tr><td class="muted">commission / stamp duty / spread+slippage</td><td class="num muted">{{ res.costs.commission_gbp|money }} / {{ res.costs.stamp_duty_gbp|money }} / {{ res.costs.spread_slippage_gbp|money }}</td></tr>
+      <tr><td>Dividends credited</td><td class="num">{{ res.dividends_gbp|money }}</td></tr>
+      <tr><td>Signals / orders</td><td class="num">{{ res.signals.total }} / {{ res.signals.ordered }}</td></tr>
+      <tr><td>Risk pauses (drawdown / daily)</td><td class="num">{{ res.risk_events.drawdown_pauses }} / {{ res.risk_events.daily_loss_pauses }}</td></tr>
+    </table></div></div>
+    {% if t.trades and t.win_rate_pct > 60 and t.profit_factor < 1 %}<div class="notice">High win rate but profit factor below 1: a few large losses outweigh many small wins.</div>{% endif %}
+    <h3>Top risk rejections</h3><ul class="tight">{% for k, n in res.signals.top_rejections %}<li>{{ n }}× {{ k }}</li>{% endfor %}</ul>
+    <details><summary>Trades ({{ res.trades|length }})</summary>
+    <table><tr><th>Symbol</th><th>Strategy</th><th>Entry</th><th>Exit</th><th class="num">Qty</th><th class="num">Entry px</th><th class="num">Exit px</th><th class="num">Net £</th><th class="num">Costs £</th><th>Exit</th></tr>
+    {% for x in res.trades %}<tr><td>{{ x.symbol }}</td><td>{{ x.strategy }}</td><td>{{ x.entry_date }}</td><td>{{ x.exit_date or 'open' }}</td><td class="num">{{ x.quantity|num(0) }}</td>
+    <td class="num">{{ x.entry_price|num(4) }}</td><td class="num">{{ x.exit_price|num(4) if x.exit_price else '' }}</td>
+    <td class="num {{ 'pos' if (x.net_pnl_gbp or 0) > 0 else 'neg' }}">{{ x.net_pnl_gbp|num if x.net_pnl_gbp is not none else '' }}</td><td class="num">{{ x.costs_gbp|num if x.costs_gbp is not none else '' }}</td>
+    <td class="muted">{{ x.exit_purpose or '' }} {{ x.exit_note or '' }}</td></tr>{% endfor %}</table></details>
+    <h3>Limitations</h3><ul class="tight muted">{% for l in res.limitations %}<li>{{ l }}</li>{% endfor %}</ul>
+  {% endif %}
+{% endif %}
+</div>
+{% endif %}
+{% endblock %}

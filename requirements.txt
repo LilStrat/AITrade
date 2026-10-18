@@ -1,0 +1,15 @@
+# Pinned, verified to have prebuilt wheels for Python 3.14 on Windows 64-bit (checked 2026-10-18).
+# Install with:  python -m pip install -r requirements.txt   (inside the project's .venv)
+numpy==2.5.4
+pandas==3.0.6
+pyyaml==6.0.3
+tzdata==2026.5
+httpx==0.28.1
+yfinance==1.7.0
+fastapi==0.146.0
+starlette==1.9.0
+uvicorn==0.54.0
+jinja2==3.1.6
+python-multipart==0.0.32
+pydantic==2.14.1
+pytest==9.1.1

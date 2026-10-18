@@ -1,0 +1,78 @@
+# =============================================================================
+#  INSTRUMENT UNIVERSE
+#  The bot evaluates every ENABLED instrument below, every trading day.
+#  It only proposes a trade when a strategy's rules AND every risk check pass.
+#
+#  Symbols use Yahoo Finance format (".L" = London Stock Exchange).
+#  type     : stock | etf          (only these two are allowed in v1)
+#  sector   : used for concentration limits
+#  tier     : large_cap | mid_cap | etf  (used for spread cost estimates)
+#  currency : auto (detected from the data source) or GBP / GBX / USD
+#  leveraged: must be false - leveraged/inverse products are refused
+#
+#  IMPORTANT (survivorship bias): this is a list of companies that are large
+#  TODAY. Backtesting only today's survivors flatters historical results,
+#  because companies that shrank or were delisted are missing. Treat backtest
+#  results on this list as optimistic.
+# =============================================================================
+
+instruments:
+  # ---- Broad-market & asset-class ETFs (UCITS, LSE listed, no stamp duty) ----
+  - {symbol: ISF.L,  name: "iShares Core FTSE 100 UCITS ETF",       type: etf, sector: "UK Equity ETF",      tier: etf}
+  - {symbol: VMID.L, name: "Vanguard FTSE 250 UCITS ETF",           type: etf, sector: "UK Equity ETF",      tier: etf}
+  - {symbol: VUSA.L, name: "Vanguard S&P 500 UCITS ETF",            type: etf, sector: "US Equity ETF",      tier: etf}
+  - {symbol: CSP1.L, name: "iShares Core S&P 500 UCITS ETF (GBP)",  type: etf, sector: "US Equity ETF",      tier: etf}
+  - {symbol: EQQQ.L, name: "Invesco EQQQ Nasdaq-100 UCITS ETF",     type: etf, sector: "US Equity ETF",      tier: etf}
+  - {symbol: VWRL.L, name: "Vanguard FTSE All-World UCITS ETF",     type: etf, sector: "Global Equity ETF",  tier: etf}
+  - {symbol: VEVE.L, name: "Vanguard FTSE Developed World UCITS ETF", type: etf, sector: "Global Equity ETF", tier: etf}
+  - {symbol: VFEM.L, name: "Vanguard FTSE Emerging Markets UCITS ETF", type: etf, sector: "EM Equity ETF",   tier: etf}
+  - {symbol: VERX.L, name: "Vanguard FTSE Developed Europe ex UK UCITS ETF", type: etf, sector: "Europe Equity ETF", tier: etf}
+  - {symbol: IGLT.L, name: "iShares Core UK Gilts UCITS ETF",       type: etf, sector: "UK Bond ETF",        tier: etf}
+  - {symbol: SGLN.L, name: "iShares Physical Gold ETC",              type: etf, sector: "Commodity ETF",      tier: etf}
+
+  # ---- FTSE 100 shares (UK stamp duty 0.5% applies to purchases) ----
+  - {symbol: AZN.L,  name: "AstraZeneca",            type: stock, sector: "Health Care",        tier: large_cap}
+  - {symbol: GSK.L,  name: "GSK",                    type: stock, sector: "Health Care",        tier: large_cap}
+  - {symbol: HLN.L,  name: "Haleon",                 type: stock, sector: "Consumer Staples",   tier: large_cap}
+  - {symbol: SN.L,   name: "Smith & Nephew",         type: stock, sector: "Health Care",        tier: large_cap}
+  - {symbol: SHEL.L, name: "Shell",                  type: stock, sector: "Energy",             tier: large_cap}
+  - {symbol: BP.L,   name: "BP",                     type: stock, sector: "Energy",             tier: large_cap}
+  - {symbol: HSBA.L, name: "HSBC Holdings",          type: stock, sector: "Financials",         tier: large_cap}
+  - {symbol: BARC.L, name: "Barclays",               type: stock, sector: "Financials",         tier: large_cap}
+  - {symbol: LLOY.L, name: "Lloyds Banking Group",   type: stock, sector: "Financials",         tier: large_cap}
+  - {symbol: NWG.L,  name: "NatWest Group",          type: stock, sector: "Financials",         tier: large_cap}
+  - {symbol: STAN.L, name: "Standard Chartered",     type: stock, sector: "Financials",         tier: large_cap}
+  - {symbol: LSEG.L, name: "London Stock Exchange Group", type: stock, sector: "Financials",     tier: large_cap}
+  - {symbol: LGEN.L, name: "Legal & General",        type: stock, sector: "Financials",         tier: large_cap}
+  - {symbol: AV.L,   name: "Aviva",                  type: stock, sector: "Financials",         tier: large_cap}
+  - {symbol: PRU.L,  name: "Prudential",             type: stock, sector: "Financials",         tier: large_cap}
+  - {symbol: III.L,  name: "3i Group",               type: stock, sector: "Financials",         tier: large_cap}
+  - {symbol: ULVR.L, name: "Unilever",               type: stock, sector: "Consumer Staples",   tier: large_cap}
+  - {symbol: DGE.L,  name: "Diageo",                 type: stock, sector: "Consumer Staples",   tier: large_cap}
+  - {symbol: BATS.L, name: "British American Tobacco", type: stock, sector: "Consumer Staples", tier: large_cap}
+  - {symbol: IMB.L,  name: "Imperial Brands",        type: stock, sector: "Consumer Staples",   tier: large_cap}
+  - {symbol: TSCO.L, name: "Tesco",                  type: stock, sector: "Consumer Staples",   tier: large_cap}
+  - {symbol: ABF.L,  name: "Associated British Foods", type: stock, sector: "Consumer Staples", tier: large_cap}
+  - {symbol: RIO.L,  name: "Rio Tinto",              type: stock, sector: "Materials",          tier: large_cap}
+  - {symbol: GLEN.L, name: "Glencore",               type: stock, sector: "Materials",          tier: large_cap}
+  - {symbol: AAL.L,  name: "Anglo American",         type: stock, sector: "Materials",          tier: large_cap}
+  - {symbol: RR.L,   name: "Rolls-Royce Holdings",   type: stock, sector: "Industrials",        tier: large_cap}
+  - {symbol: BA.L,   name: "BAE Systems",            type: stock, sector: "Industrials",        tier: large_cap}
+  - {symbol: EXPN.L, name: "Experian",               type: stock, sector: "Industrials",        tier: large_cap}
+  - {symbol: REL.L,  name: "RELX",                   type: stock, sector: "Industrials",        tier: large_cap}
+  - {symbol: AHT.L,  name: "Ashtead Group",          type: stock, sector: "Industrials",        tier: large_cap}
+  - {symbol: SMIN.L, name: "Smiths Group",           type: stock, sector: "Industrials",        tier: large_cap}
+  - {symbol: ITRK.L, name: "Intertek",               type: stock, sector: "Industrials",        tier: large_cap}
+  - {symbol: CPG.L,  name: "Compass Group",          type: stock, sector: "Consumer Discretionary", tier: large_cap}
+  - {symbol: IHG.L,  name: "InterContinental Hotels", type: stock, sector: "Consumer Discretionary", tier: large_cap}
+  - {symbol: NG.L,   name: "National Grid",          type: stock, sector: "Utilities",          tier: large_cap}
+  - {symbol: SSE.L,  name: "SSE",                    type: stock, sector: "Utilities",          tier: large_cap}
+  - {symbol: VOD.L,  name: "Vodafone",               type: stock, sector: "Telecoms",           tier: large_cap}
+  - {symbol: BT-A.L, name: "BT Group",               type: stock, sector: "Telecoms",           tier: large_cap}
+  - {symbol: SGE.L,  name: "Sage Group",             type: stock, sector: "Technology",         tier: large_cap}
+
+  # ---- Optional US-listed examples (DISABLED by default) ----
+  # UK retail clients generally cannot buy US-domiciled ETFs (no UK/EU KID).
+  # Individual US shares are usually available but carry FX costs.
+  - {symbol: MSFT,   name: "Microsoft (US)",  type: stock, sector: "Technology", tier: large_cap, currency: USD, enabled: false}
+  - {symbol: AAPL,   name: "Apple (US)",      type: stock, sector: "Technology", tier: large_cap, currency: USD, enabled: false}

@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Secrets - NEVER commit
+.env
+*.key
+
+# Private runtime data (your database, logs, exports and backups)
+database/
+logs/
+backups/
+exports/
+config/settings.yaml
+config/*.tmp
+config/*.restore
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Opportunities{% endblock %}
+{% block content %}
+<h1>Opportunities</h1>
+<p class="muted">Signals from the last 14 days. A signal means the strategy's rules were met at a close; the risk manager then
+  decided whether to place a paper order and how large. The ranking score only orders signals - it is <b>not</b> a probability of profit.
+  "No signals" is a normal and often correct outcome.</p>
+{% if pending %}<div class="card"><h2>Orders waiting for the next session (paper)</h2>
+<table><tr><th>Symbol</th><th>Side</th><th>Type</th><th class="num">Qty</th><th>Purpose</th><th>Stop</th><th>Reason</th><th>Decided</th></tr>
+{% for o in pending %}<tr><td>{{ o.symbol }}</td><td>{{ o.side }}</td><td>{{ o.order_type }}</td><td class="num">{{ o.quantity|num(0) }}</td>
+<td>{{ o.purpose }}</td><td>{{ o.stop_price|num(4) if o.stop_price else '' }}</td><td>{{ o.reason or '' }}</td><td>{{ o.created_for_date }}</td></tr>{% endfor %}</table></div>{% endif %}
+{% for g in sigs %}
+<div class="card">
+  <h2>{{ g.symbol }} · {{ g.strategy_name }} · {{ g.as_of_date }} <span class="tag {{ g.status }}">{{ g.status }}</span></h2>
+  <div class="grid g2">
+    <div>
+      <h3>Why it qualified (all rules met)</h3>
+      <ul class="tight">{% for r in g.reasons_l %}<li>{{ r }}</li>{% endfor %}</ul>
+      <h3>Plan</h3>
+      <table>
+        <tr><td>Estimated entry</td><td>{{ g.entry_est|num(4) }} (close on signal day; the actual fill is the next open)</td></tr>
+        <tr><td>Initial stop</td><td>{{ g.stop|num(4) }} ({{ ((1 - g.stop / g.entry_est) * 100)|num(2) }}% below entry)</td></tr>
+        <tr><td>Target</td><td>{{ g.target|num(4) if g.target else 'none - exit by strategy rule / trailing stop' }}</td></tr>
+        <tr><td>Size</td><td>{% if g.risk.quantity %}{{ g.risk.quantity }} shares ≈ {{ g.risk.value_gbp|money }}; risk if stopped ≈ {{ g.risk.risk_gbp|money }} (gaps can make it larger){% else %}–{% endif %}</td></tr>
+        <tr><td>Ranking score</td><td>{{ g.rank_score|num(2) }}</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Why it might fail</h3>
+      <ul class="tight">{% for r in g.risks_l %}<li>{{ r }}</li>{% endfor %}</ul>
+      <h3>Risk manager</h3>
+      {% if g.risk.rejections %}<p class="neg"><b>Rejected:</b></p><ul class="tight">{% for r in g.risk.rejections %}<li>{{ r }}</li>{% endfor %}</ul>{% else %}<p class="pos">All checks passed.</p>{% endif %}
+      {% if g.risk.warnings %}<p><b>Warnings:</b></p><ul class="tight">{% for r in g.risk.warnings %}<li>{{ r }}</li>{% endfor %}</ul>{% endif %}
+      <details><summary>All checks</summary><table>{% for c in g.risk.checks %}<tr><td>{{ '✔' if c.passed else '✘' }}</td><td>{{ c.name }}</td><td>{{ c.detail }}</td></tr>{% endfor %}</table></details>
+      <form method="post" action="/action/ai/explain"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="signal_id" value="{{ g.id }}">
+        <button class="secondary">Ask the local AI to explain (optional)</button></form>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card"><p>No signals in the last 14 days. Run the daily cycle to scan the watchlist. Holding cash when nothing qualifies is intended behaviour.</p></div>
+{% endfor %}
+{% endblock %}

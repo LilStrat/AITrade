@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Market{% endblock %}
+{% block content %}
+<h1>Market overview</h1>
+<div class="grid g2">
+  <div class="card"><h2>Conditions (calculated, not AI)</h2>
+    <table>
+      <tr><td>Latest data</td><td>{{ facts.date or '–' }}</td></tr>
+      <tr><td>Market regime</td><td>{{ facts.regime }}</td></tr>
+      <tr><td>Watchlist above 200-day average</td><td>{{ facts.pct_above_200d_average if facts.pct_above_200d_average is not none else '–' }}%</td></tr>
+      <tr><td>Best 1-month</td><td>{% for s, r in facts.best_1m %}{{ s }} {{ r }}%{% if not loop.last %}, {% endif %}{% endfor %}</td></tr>
+      <tr><td>Worst 1-month</td><td>{% for s, r in facts.worst_1m %}{{ s }} {{ r }}%{% if not loop.last %}, {% endif %}{% endfor %}</td></tr>
+    </table>
+  </div>
+  <div class="card"><h2>Data source</h2>
+    <p><b>{{ dh.provider.name }}</b> - {{ dh.provider.delay_note }}. <b>These are not real-time prices.</b><br>
+      <span class="muted">{{ dh.provider.licence_note }}</span></p>
+    {% if dh.fallback %}<p class="muted">Fallback: {{ dh.fallback.name }} - {{ dh.fallback.delay_note }}</p>{% endif %}
+    <p>{{ dh.fresh }} of {{ dh.total }} instruments have fresh data for {{ dh.expected }}. Stale or suspicious instruments cannot be traded.</p>
+    <form method="post" action="/action/update-data"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button>Download latest prices</button></form>
+    {% if bg.data_update and bg.data_update.status != 'running' %}<p>Last update: {{ bg.data_update.message }}</p>{% endif %}
+  </div>
+</div>
+<div class="card"><h2>Watchlist</h2>
+<table><tr><th>Symbol</th><th>Name</th><th>Type</th><th>Sector</th><th class="num">Last close</th><th>Date</th><th class="num">1d</th><th class="num">1w</th><th class="num">1m</th><th class="num">3m</th><th>&gt;200d</th><th>Data</th></tr>
+{% for w in wl %}{% set st = (dh.rows|selectattr('symbol', 'equalto', w.symbol)|first) %}
+<tr><td><b>{{ w.symbol }}</b></td><td>{{ w.name }}</td><td>{{ w.type }}</td><td>{{ w.sector }}</td>
+  <td class="num">{{ w.close|num(4) if w.close else '–' }} {{ w.ccy if w.close else '' }}</td><td>{{ w.date or '' }}</td>
+  {% for k in ['r1','r5','r21','r63'] %}<td class="num {{ 'pos' if (w[k] or 0) > 0 else 'neg' if (w[k] or 0) < 0 else '' }}">{{ w[k]|pct(1) if w[k] is not none else '–' }}</td>{% endfor %}
+  <td>{{ 'yes' if w.above200 else ('no' if w.above200 is not none else '–') }}</td>
+  <td><span class="tag {{ st.state.split(' ')[0] if st and st.state else '' }}">{{ st.state if st else '' }}</span>
+    {% if st and st.last_error %}<div class="muted" title="{{ st.last_error }}">error</div>{% endif %}
+    {% if st and st.quality_flag == 'suspicious' %}
+      <form method="post" action="/action/clear-suspicious" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+      <input type="hidden" name="symbol" value="{{ w.symbol }}"><button class="secondary" title="Only after checking the price move is genuine">Reviewed - OK</button></form>{% endif %}</td></tr>
+{% endfor %}</table>
+<p class="muted">Prices are in pounds (LSE pence prices are converted). 1d/1w/1m/3m = price change over 1/5/21/63 sessions, excluding dividends.</p>
+</div>
+<div class="card"><h2>Data quality log</h2>
+<table>{% for e in dh.events %}<tr><td class="muted">{{ e.ts[:16] }}</td><td>{{ e.symbol or '' }}</td><td><span class="tag {{ e.severity }}">{{ e.severity }}</span></td><td>{{ e.message }}</td></tr>
+{% else %}<tr><td class="muted">No events.</td></tr>{% endfor %}</table></div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Portfolio{% endblock %}
+{% block content %}
+<h1>Portfolio (paper account #{{ s.account.id }})</h1>
+<div class="grid g4">
+  <div class="card kpi"><div class="label">Equity</div><div class="value">{{ s.equity|money }}</div></div>
+  <div class="card kpi"><div class="label">Invested</div><div class="value">{{ s.positions_value|money }}</div><div class="sub">{{ s.exposure_pct|num(1) }}% of equity</div></div>
+  <div class="card kpi"><div class="label">Realised P&amp;L</div><div class="value {{ 'pos' if s.realised >= 0 else 'neg' }}">{{ s.realised|money }}</div><div class="sub">closed trades, after costs</div></div>
+  <div class="card kpi"><div class="label">Unrealised P&amp;L</div><div class="value {{ 'pos' if s.unrealised >= 0 else 'neg' }}">{{ s.unrealised|money }}</div><div class="sub">open positions at last close</div></div>
+  <div class="card kpi"><div class="label">Dividends received</div><div class="value">{{ s.dividends|money }}</div></div>
+  <div class="card kpi"><div class="label">Fees paid</div><div class="value">{{ s.fees|money }}</div><div class="sub">commission, stamp duty, levies, FX</div></div>
+</div>
+<div class="card"><h2>Open positions</h2>
+<table><tr><th>Symbol</th><th>Name</th><th>Strategy</th><th class="num">Qty</th><th class="num">Avg entry</th><th class="num">Last close</th><th class="num">Value</th><th class="num">Cost (incl. fees)</th><th class="num">Unrealised</th><th class="num">Weight</th><th class="num">Stop</th><th>Since</th></tr>
+{% for p in s.positions %}<tr><td><b>{{ p.symbol }}</b></td><td>{{ p.name }}</td><td>{{ p.strategy or '' }}</td><td class="num">{{ p.qty|num(0) }}</td>
+<td class="num">{{ p.avg_price|num(4) }} {{ p.currency }}</td><td class="num">{{ p.price|num(4) if p.price else '–' }}<div class="muted">{{ p.price_date or '' }}</div></td>
+<td class="num">{{ p.value_gbp|money }}</td><td class="num">{{ p.cost_gbp|money }}</td>
+<td class="num {{ 'pos' if (p.unrealised_gbp or 0) >= 0 else 'neg' }}">{{ p.unrealised_gbp|money }}</td><td class="num">{{ p.weight_pct|num(1) }}%</td>
+<td class="num">{{ p.stop|num(4) if p.stop else '–' }}</td><td>{{ p.entry_date or '' }} ({{ p.bars_held }} sessions)</td></tr>
+{% else %}<tr><td colspan="12" class="muted">No open positions - the account is in cash.</td></tr>{% endfor %}</table>
+<p class="muted">Positions are valued at the latest end-of-day close (not live prices). Stops are simulated resting orders checked against each day's low; a price gap can fill below the stop.</p>
+</div>
+{% endblock %}

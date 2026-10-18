@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Alerts{% endblock %}
+{% block content %}
+<h1>Alerts</h1>
+<p class="muted">"PLACED" means a paper order was created for a future session; "BOUGHT/SOLD" means a simulated fill happened.</p>
+<form method="post" action="/action/ack-alerts"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="secondary">Mark all as read</button></form>
+<div class="card"><table>
+{% for a in alerts %}<tr style="{{ '' if a.acknowledged else 'font-weight:600' }}"><td class="muted">{{ a.ts[:19] }}</td><td><span class="tag {{ a.level }}">{{ a.level }}</span></td><td>{{ a.category }}</td><td>{{ a.message }}</td></tr>
+{% else %}<tr><td class="muted">No alerts.</td></tr>{% endfor %}</table></div>
+{% endblock %}

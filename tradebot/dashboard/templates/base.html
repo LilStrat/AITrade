@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Trading Bot{% endblock %} · UK Trading Bot</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="banner {{ banner.cls }}">
+  <span>{{ banner.text }}</span>
+  <small>London {{ now }} · LSE: {{ market.label }} · Data: {{ data_note }}</small>
+</div>
+{% if kill %}<div class="stopbar">EMERGENCY STOP IS ON - no new orders will be placed. <a href="/risk" style="color:#fff;text-decoration:underline">Manage</a></div>{% endif %}
+{% if paused %}<div class="pausebar"><b>Trading paused:</b> {{ paused }} <a href="/risk">Review</a></div>{% endif %}
+<nav>
+  {% for href, name in [("/", "Overview"), ("/market", "Market"), ("/opportunities", "Opportunities"), ("/portfolio", "Portfolio"),
+                        ("/history", "History"), ("/strategies", "Strategies"), ("/risk", "Risk"), ("/backtest", "Backtesting"),
+                        ("/ai", "AI analysis"), ("/reports", "Reports"), ("/settings", "Settings")] %}
+    <a href="{{ href }}" class="{{ 'active' if request.url.path == href else '' }}">{{ name }}</a>
+  {% endfor %}
+  <a href="/alerts" class="{{ 'active' if request.url.path == '/alerts' else '' }}">Alerts{% if unread %}<span class="badge">{{ unread }}</span>{% endif %}</a>
+</nav>
+<main>
+{% if msg %}<div class="flash">{{ msg }}</div>{% endif %}
+{% for name, task in bg.items() if task.status == 'running' %}
+  <div class="notice">Working: <b>{{ name.replace('_', ' ') }}</b> started {{ task.started }}… <a href="">refresh</a></div>
+{% endfor %}
+{% block content %}{% endblock %}
+</main>
+<footer>UK Trading Bot v{{ version }} · runs only on this computer (127.0.0.1) · Simulated results are not a guarantee of future returns.</footer>
+</body>
+</html>

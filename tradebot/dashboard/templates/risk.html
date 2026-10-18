@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Risk{% endblock %}
+{% block content %}
+<h1>Risk management</h1>
+{% for n in r.near %}<div class="notice">{{ n }}</div>{% endfor %}
+<div class="grid g4">
+  <div class="card kpi"><div class="label">Drawdown from peak</div><div class="value">{{ r.drawdown_pct|num(2) }}%</div><div class="sub">pause at {{ r.limits.max_drawdown_pct }}% · peak {{ r.state.peak_equity|money }}</div></div>
+  <div class="card kpi"><div class="label">Last session loss</div><div class="value">{{ r.daily_loss_pct|num(2) }}%</div><div class="sub">daily limit {{ r.limits.max_daily_loss_pct }}%</div></div>
+  <div class="card kpi"><div class="label">Exposure</div><div class="value">{{ r.exposure_pct|num(1) }}%</div><div class="sub">max {{ r.limits.max_total_exposure_pct }}% (no leverage)</div></div>
+  <div class="card kpi"><div class="label">Open positions</div><div class="value">{{ r.open_positions }}</div><div class="sub">max {{ r.limits.max_open_positions }}</div></div>
+</div>
+<div class="grid g2">
+  <div class="card"><h2>Controls</h2>
+    <h3>Emergency stop</h3>
+    <p class="muted">Cancels pending entry orders and blocks all new orders. Protective stop orders are kept because they reduce risk.</p>
+    <form method="post" action="/action/kill"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+      {% if kill %}<input type="hidden" name="on" value="0"><button class="good">Release emergency stop</button>
+      {% else %}<input type="hidden" name="on" value="1"><button class="danger">EMERGENCY STOP</button>{% endif %}</form>
+    <h3>Resume after a pause</h3>
+    <p class="muted">Pauses happen after a {{ r.limits.max_drawdown_pct }}% drawdown or repeated failures. Resuming measures drawdown from today's value again - review first.</p>
+    <form method="post" action="/action/resume"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+      <label><input type="checkbox" name="confirm" value="yes"> I have reviewed why trading paused</label> <button class="secondary" {{ '' if paused else 'disabled' }}>Resume</button></form>
+    <h3>Close all positions</h3>
+    <form method="post" action="/action/flatten"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+      Type <b>CLOSE ALL</b>: <input name="confirm" size="10"> <button class="danger">Sell everything at next open (paper)</button></form>
+  </div>
+  <div class="card"><h2>Current limits</h2>
+    <table>
+      <tr><td>Risk per trade</td><td>{{ r.limits.max_risk_per_trade_pct }}% of equity (≈ {{ (s.equity * r.limits.max_risk_per_trade_pct / 100)|money }})</td></tr>
+      <tr><td>Daily loss limit</td><td>{{ r.limits.max_daily_loss_pct }}%</td></tr>
+      <tr><td>Drawdown pause</td><td>{{ r.limits.max_drawdown_pct }}%</td></tr>
+      <tr><td>Max position</td><td>{{ r.limits.max_position_pct }}% of equity</td></tr>
+      <tr><td>Max per sector</td><td>{{ r.limits.max_sector_pct }}%</td></tr>
+      <tr><td>Correlated holdings</td><td>max {{ r.limits.max_correlated_positions }} above {{ r.limits.correlation_threshold }} correlation</td></tr>
+      <tr><td>Cash reserve</td><td>{{ r.limits.min_cash_reserve_pct }}%</td></tr>
+      <tr><td>Order size vs volume</td><td>max {{ r.limits.max_pct_of_avg_volume }}% of 20-day average volume</td></tr>
+      <tr><td>Costs vs risk</td><td>reject if round-trip costs exceed {{ r.limits.max_cost_pct_of_risk }}% of the amount at risk</td></tr>
+      <tr><td>Short selling / leverage</td><td>disabled (locked)</td></tr>
+    </table>
+    <p class="muted">Change these on the Settings page. A stop-loss does not guarantee a maximum loss: gaps, slippage and illiquidity can cause larger losses.</p>
+  </div>
+</div>
+<div class="card"><h2>Sector exposure</h2>
+<table>{% for k, v in r.sectors.items() %}<tr><td>{{ k }}</td><td class="num">{{ v|num(1) }}%</td></tr>{% else %}<tr><td class="muted">No positions.</td></tr>{% endfor %}</table></div>
+{% endblock %}

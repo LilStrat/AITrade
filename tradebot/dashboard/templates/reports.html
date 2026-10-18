@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<h1>Reports, exports and backups</h1>
+<div class="grid g2">
+<div class="card"><h2>Generate a report</h2>
+  <form method="post" action="/action/report"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <select name="kind"><option value="daily">Daily report</option><option value="weekly">Weekly report</option></select>
+    <label><input type="checkbox" name="ai"> add AI commentary (optional, clearly labelled)</label>
+    <button>Generate</button></form>
+  <h3>Saved reports</h3>
+  <ul class="tight">{% for f in files %}<li><a href="/reports?view={{ f }}">{{ f }}</a> · <a href="/download/reports/{{ f }}">download</a></li>{% else %}<li class="muted">None yet.</li>{% endfor %}</ul>
+</div>
+<div class="card"><h2>Export &amp; backup</h2>
+  <form method="post" action="/action/export" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="secondary">Export trade history &amp; tax records to CSV</button></form>
+  <form method="post" action="/action/backup" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="secondary">Back up database &amp; settings now</button></form>
+  <h3>Exports (folder: exports\)</h3><ul class="tight">{% for e in exports %}<li>{{ e }}</li>{% else %}<li class="muted">None.</li>{% endfor %}</ul>
+  <h3>Backups (folder: backups\)</h3><ul class="tight">{% for b in backups %}<li>{{ b }}</li>{% else %}<li class="muted">None.</li>{% endfor %}</ul>
+  <p class="muted">To restore a backup, close the app and run "Restore Backup.bat".</p>
+</div></div>
+{% if content %}<div class="card"><h2>{{ view }}</h2><pre class="md">{{ content }}</pre></div>{% endif %}
+{% endblock %}
