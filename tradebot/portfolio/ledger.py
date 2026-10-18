@@ -11,9 +11,8 @@ estimate in ``tax.py`` applies HMRC's share matching rules separately.
 
 from __future__ import annotations
 
-import copy
 import sqlite3
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timezone
 
 from ..db import Database
@@ -151,7 +150,9 @@ class Ledger:
                 hit = self._replay(account_id, None)
                 cache.clear()
                 cache[key] = hit
-            cash, pos, closed, realised, divs, fees, deposits = copy.deepcopy(hit)
+            cash, pos, closed, realised, divs, fees, deposits = hit
+            pos = {k: replace(v) for k, v in pos.items()}        # callers get their own copies
+            closed = {k: replace(v) for k, v in closed.items()}
             r = self.db.one("""SELECT COALESCE(SUM(reserved_cash),0) FROM orders
                                WHERE account_id=? AND side='BUY' AND status IN ('PENDING','PARTIAL')""", (account_id,))
             return AccountState(account_id, round(cash, 2), round(float(r[0]), 2), pos, closed,

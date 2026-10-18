@@ -28,6 +28,8 @@
 {% endfor %}
 {% block content %}{% endblock %}
 </main>
-<footer>UK Trading Bot v{{ version }} · runs only on this computer (127.0.0.1) · Simulated results are not a guarantee of future returns.</footer>
+<footer><form method="post" action="/action/stop-app" style="margin-bottom:8px" onsubmit="return confirm('Stop the trading bot?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="secondary">Stop the trading bot</button></form>
+UK Trading Bot v{{ version }} · runs only on this computer (127.0.0.1) · Simulated results are not a guarantee of future returns.</footer>
 </body>
 </html>

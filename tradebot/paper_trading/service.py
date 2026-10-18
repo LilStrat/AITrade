@@ -137,6 +137,7 @@ class TradingService:
                     self.alerts.raise_("warning", "trading_block", f"New entries blocked for {latest}: {b}")
             else:
                 summary["message"] = f"Decisions for {latest} were already made; nothing new to do."
+            summary["reports"] = self._auto_reports(aid, latest)
             self.db.execute("UPDATE risk_state SET consecutive_failures=0 WHERE account_id=?", (aid,))
             self.alerts.raise_("info", "cycle", f"Daily paper cycle complete for {latest}: "
                                                 f"{len(summary['orders'])} order(s) placed, {summary['signals']} signal(s).")
@@ -154,6 +155,25 @@ class TradingService:
                 self.alerts.raise_("critical", "risk", f"Trading paused after {rs[0]} consecutive failures.")
         self.last_cycle = summary
         return summary
+
+    def _auto_reports(self, aid: int, day: date) -> list[str]:
+        """Daily report every cycle; weekly report on the week's last trading day.
+        A reporting problem is logged but never fails the trading cycle."""
+        from ..reports.generator import generate
+        made = []
+        kinds = ["daily"]
+        if cal.next_trading_day(day).isocalendar()[1] != day.isocalendar()[1]:
+            kinds.append("weekly")
+        for kind in kinds:
+            try:
+                res = generate(self.db, aid, kind, day, self.settings["universe"]["benchmark"], self.market)
+                made.append(res["path"])
+                if kind == "weekly":
+                    self.alerts.raise_("info", "report", f"Weekly report ready for the week ending {day}")
+            except Exception:
+                log.exception("%s report failed", kind)
+                self.alerts.raise_("warning", "report", f"Could not generate the {kind} report for {day} (see log)")
+        return made
 
     # ---------------------------------------------------------------- controls
     def set_kill_switch(self, on: bool) -> None:

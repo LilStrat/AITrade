@@ -30,6 +30,47 @@ You now have `C:\AI\Trading Bot` (empty).
 
 Check: `C:\AI\Trading Bot\app.py` must exist (not `C:\AI\Trading Bot\aitrade-…\app.py`).
 
+## If Windows says "Smart App Control blocked…"
+
+Windows 11's **Smart App Control** blocks unsigned script files (`.bat`) that
+came from the internet, and it has no "Run anyway" button. **Do not turn Smart
+App Control off**: Windows only lets you turn it back on by reinstalling.
+Use either fix below. Both stay inside `C:\AI\Trading Bot`.
+
+**Fix 1 - remove the "downloaded from the internet" mark (try this first)**
+1. Click Start, type `PowerShell`, and open **Windows PowerShell** (not as administrator).
+2. Copy this line, paste it into the blue window (right-click pastes) and press Enter:
+   ```
+   Get-ChildItem -LiteralPath "C:\AI\Trading Bot" -Recurse | Unblock-File
+   ```
+   It only removes the download mark from files in the bot's folder and prints nothing when it works.
+3. Try `1 - First Time Setup.bat` again.
+
+**Fix 2 - no .bat files at all (works even if Fix 1 doesn't)**
+The bot can be run through Python itself, which is a signed program you already use.
+1. Open **Windows PowerShell** as above and run these one at a time:
+   ```
+   cd "C:\AI\Trading Bot"
+   py -3.14 setup_windows.py
+   ```
+   This does exactly what `1 - First Time Setup.bat` does. It should end with `Self-check PASSED`.
+2. To **start** the bot from then on:
+   ```
+   cd "C:\AI\Trading Bot"
+   py app.py
+   ```
+   Your browser opens the dashboard. To **stop** it, use the **Stop the trading bot** button at the
+   bottom of any dashboard page, or close the PowerShell window.
+3. Other tasks use the same pattern: `py app.py update-data`, `py app.py research`,
+   `py app.py backup`, and for the tests `.venv\Scripts\python.exe -m pytest -q`.
+4. Optional desktop shortcut: right-click the desktop → **New → Shortcut** → paste
+   `"C:\AI\Trading Bot\.venv\Scripts\python.exe" "C:\AI\Trading Bot\app.py"` → **Next** →
+   name it `Start Trading Bot` → **Finish**. A shortcut you create yourself is not blocked.
+
+If an error mentions **"An Application Control policy has blocked this file"** while installing
+or starting, Smart App Control is blocking one of the downloaded Python packages. Send me
+the full message (it contains no secrets) and I will find an alternative package.
+
 ## Step 3 - First-time setup
 
 1. In `C:\AI\Trading Bot`, double-click **`1 - First Time Setup.bat`**.
@@ -113,4 +154,4 @@ logs, exports, backups, `.env` and `config\settings.yaml` are not part of the do
 they are kept. Then run `1 - First Time Setup.bat` again to install any new packages.
 
 ### Running the automated tests yourself
-Double-click **`Run Tests.bat`**. It should finish with a line like `117 passed`.
+Double-click **`Run Tests.bat`**. It should finish with a line like `122 passed`.

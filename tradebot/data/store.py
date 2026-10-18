@@ -148,6 +148,8 @@ class MarketData:
                             exchange=exchange)
         for sev, msg in rep.issues:
             self.quality_event(symbol, sev, f"[{result.source}] {msg}")
+        for msg in result.warnings:
+            self.quality_event(symbol, "warning", f"[{result.source}] {msg}")
         if rep.clean.empty:
             self._status_error(symbol, "no valid bars after validation")
             return UpdateResult(symbol, False, result.source, 0, "no valid bars after validation")

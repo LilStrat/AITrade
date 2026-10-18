@@ -21,7 +21,7 @@ shares and ETFs. It includes:
 * **Optional local AI** (Ollama / Llama 3.1 8B) for plain-English
   explanations. It cannot place orders or change risk limits.
 
-> **Status:** v1.0.0. All 117 automated tests pass. Live trading is **disabled**:
+> **Status:** v1.0.0. All 122 automated tests pass. Live trading is **disabled**:
 > there is no live broker adapter. No strategy has yet been tested on real
 > market data (the build environment had no market data access), so **nothing
 > here shows the bot can make money**. Step 6 of the setup guide produces the
@@ -36,6 +36,11 @@ Full beginner instructions: **[docs/SETUP.md](docs/SETUP.md)**.
 3. Double-click **`2 - Start Trading Bot.bat`**. The dashboard opens at http://127.0.0.1:8765.
 4. Click **Run daily cycle now** (first price download takes a few minutes).
 5. Double-click **`Run Research Backtests.bat`** and read the verdicts.
+
+**Smart App Control blocking the `.bat` files?** Don't turn it off. See the
+[Smart App Control section](docs/SETUP.md#if-windows-says-smart-app-control-blocked)
+for the one-line unblock, or use Python directly: `py -3.14 setup_windows.py` once,
+then `py app.py` to start. Every dashboard page has a **Stop the trading bot** button.
 
 | Launcher | What it does |
 |---|---|

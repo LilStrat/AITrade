@@ -120,9 +120,12 @@ class Strategy(ABC):
 class IndicatorTable:
     """Prepared indicators with fast row lookup by date (dict of dicts)."""
 
-    def __init__(self, df: pd.DataFrame):
+    def __init__(self, df: pd.DataFrame, from_day: date | None = None):
+        """``from_day`` limits the fast lookup to the days that will be queried
+        (indicator values themselves are always computed on full history)."""
         self.df = df
-        self.rows: dict = df.to_dict("index")
+        part = df if from_day is None else df[df.index >= from_day]
+        self.rows: dict = part.to_dict("index")
 
     @property
     def index(self):

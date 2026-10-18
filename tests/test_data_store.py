@@ -149,3 +149,13 @@ def test_incomplete_today_bar_not_stored(settings):
     m = _market(settings, SyntheticProvider())
     m.update_symbol("AAA.L", london(2026, 10, 16, 14))  # Friday 14:00, session not complete
     assert m.bars("AAA.L").index[-1] == date(2026, 10, 15)
+
+
+def test_dividend_unit_mixup_guard():
+    from tradebot.data.providers.yahoo import dividend_in_major_units
+    assert dividend_in_major_units(5.0, 250.0, 100) == (0.05, None)          # 5p on a 250p share
+    v, note = dividend_in_major_units(0.05, 250.0, 100)                      # £0.05 reported as pounds
+    assert v == 0.05 and "pounds" in note
+    v, note = dividend_in_major_units(150.0, 250.0, 100)                     # 60% of price: nonsense
+    assert v is None and "implausible" in note
+    assert dividend_in_major_units(0.8, 400.0, 1) == (0.8, None)             # USD stock, no conversion

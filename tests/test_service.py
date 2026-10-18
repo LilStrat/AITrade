@@ -130,3 +130,12 @@ def test_live_and_broker_paper_modes_refuse_orders(isolated_home):
             c.service.run_daily_cycle(now=london(2026, 6, 1, 19))
         assert c.db.one("SELECT COUNT(*) FROM orders")[0] == 0
         c.db.close()
+
+
+def test_reports_generated_automatically(ctx, isolated_home):
+    days = [d for d in trading_days(10)]
+    run_days(ctx, days)
+    reports = isolated_home / "exports" / "reports"
+    assert (reports / f"daily-{days[-1].isoformat()}.md").exists()
+    fridays = [d for d in days if d.weekday() == 4]
+    assert fridays and (reports / f"weekly-{fridays[0].isoformat()}.md").exists()

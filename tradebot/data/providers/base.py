@@ -38,6 +38,7 @@ class FetchResult:
     delay_note: str = "End-of-day data"
     adjustment_note: str = "split-adjusted, not dividend-adjusted"
     raw_currency: str | None = None     # provider's own unit, e.g. GBX (pence)
+    warnings: list[str] = field(default_factory=list)  # recorded as data-quality events
 
 
 def normalise_currency(raw: str | None) -> tuple[str, float]:

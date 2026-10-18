@@ -2,17 +2,18 @@
 
 ## Testing status (v1.0.0)
 
-* **117 automated tests, all passing** on Python 3.14.8 (Linux build
-  environment), 2.5 minutes. Coverage includes indicators (incl. Wilder's
+* **122 automated tests, all passing** on Python 3.14.8 (Linux build
+  environment), about 3 minutes. Coverage includes indicators (incl. Wilder's
   textbook RSI values and lookahead checks), LSE calendar and DST, data
   validation and failure handling, costs, fills (gaps, volume caps), ledger
   (append-only, duplicates, splits), risk checks, strategies, the paper broker
   (idempotency, no same-day fills, OCO), backtests (accounting identity,
   determinism, **future-data-change lookahead test**), the daily cycle
   (catch-up, idempotency, stale data, failure pause, restart recovery, kill
-  switch, reset), tax matching rules, AI isolation, security (secrets, CSRF,
+  switch, reset, automatic reports), tax matching rules, email alerts, AI isolation, security (secrets, CSRF,
   host header, localhost binding, path traversal) and every dashboard page.
-* **Not run in the build environment:** the Windows batch files, the
+* **Not run in the build environment:** the Windows batch files (which
+  Smart App Control may block - see SETUP.md for the Python-only route), the
   Windows file lock (`msvcrt`), real network downloads (the build
   environment could not reach Yahoo/Stooq/EODHD), and your local Ollama.
   The code paths exist and are written for Windows, but **the first real
@@ -39,7 +40,7 @@
 * **Tax output is an estimate** (see `UK_TAX_AND_ACCOUNTS.md`).
 * **US-listed instruments** are supported (with FX costs) but disabled by
   default, and the trading calendar is the LSE's.
-* **Email alerts** are implemented but untested against a real mail server.
+* **Email alerts** are tested against a simulated mail server only.
 
 ## Ongoing costs
 £0 by default. Optional: EODHD data (~$20/month), and later a broker's

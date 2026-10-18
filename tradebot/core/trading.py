@@ -77,13 +77,13 @@ class TradingCore:
         self.daily_loss_pauses = 0
 
     # ------------------------------------------------------------ preparation
-    def prepare(self, symbols: list[str]) -> None:
+    def prepare(self, symbols: list[str], from_day: date | None = None) -> None:
         for sym in symbols:
             h = self.data.history(sym)
             if h.empty:
                 continue
             for key, st in self.strategies.items():
-                self.ind[(key, sym)] = IndicatorTable(st.prepare(h))
+                self.ind[(key, sym)] = IndicatorTable(st.prepare(h), from_day)
             self._returns[sym] = h["close"].pct_change()
 
     # ------------------------------------------------------------ risk state

@@ -491,6 +491,14 @@ def create_app(ctx) -> FastAPI:
         f = create_backup(ctx.db)
         return back("/reports", f"Backup saved: backups/{f.name}")
 
+    @app.post("/action/stop-app")
+    def act_stop_app(csrf_token: str = Form(...)):
+        check_csrf(csrf_token)
+        if app.state.shutdown:
+            app.state.shutdown()
+        return HTMLResponse("<h2>The trading bot is stopping.</h2><p>You can close this tab. "
+                            "Start it again with <b>py app.py</b> or your Start shortcut.</p>")
+
     @app.post("/action/shutdown")
     def act_shutdown(token: str = Form(...)):
         expected = paths.CONTROL_TOKEN_FILE.read_text(encoding="utf-8").strip() if paths.CONTROL_TOKEN_FILE.exists() else None

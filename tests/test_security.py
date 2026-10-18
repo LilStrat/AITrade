@@ -53,6 +53,8 @@ def test_dashboard_security(ctx):
     # downloads cannot escape the exports folder
     assert c.get("/download/..%2F..%2Fconfig/default_settings.yaml").status_code in (404, 400)
     assert c.get("/download/../database/tradebot.sqlite3").status_code in (404, 400)
+    # stopping from the UI needs the CSRF token
+    assert c.post("/action/stop-app", data={"csrf_token": "wrong"}).status_code == 403
     # shutdown needs the local control token
     assert c.post("/action/shutdown", data={"token": "guess"}).status_code == 403
     # no API docs / schema exposed

@@ -62,13 +62,43 @@ class YahooProvider(MarketDataProvider):
         }, columns=BAR_COLUMNS)
 
         actions: list[CorporateAction] = []
+        warnings: list[str] = []
         if "Dividends" in df:
-            for d, v in zip(dates, df["Dividends"].fillna(0).to_numpy()):
-                if v and v > 0:
-                    actions.append(CorporateAction(d, "dividend", float(v) / divisor, currency))
+            closes = df["Close"].astype(float).to_numpy()
+            for i, (d, v) in enumerate(zip(dates, df["Dividends"].fillna(0).to_numpy())):
+                if not v or v <= 0:
+                    continue
+                ref = closes[i - 1] if i > 0 else closes[i]
+                value, note = dividend_in_major_units(float(v), float(ref), divisor)
+                if note:
+                    warnings.append(f"{symbol} dividend on {d}: {note}")
+                if value is not None:
+                    actions.append(CorporateAction(d, "dividend", value, currency))
         if "Stock Splits" in df:
             for d, v in zip(dates, df["Stock Splits"].fillna(0).to_numpy()):
                 if v and v > 0 and v != 1:
                     actions.append(CorporateAction(d, "split", float(v), None))
         raw_unit = "GBX" if divisor == 100 and currency == "GBP" else currency
-        return FetchResult(symbol, self.name, currency, bars, actions, self.delay_note, raw_currency=raw_unit)
+        return FetchResult(symbol, self.name, currency, bars, actions, self.delay_note, raw_currency=raw_unit,
+                           warnings=warnings)
+
+
+def dividend_in_major_units(value: float, ref_price: float, divisor: float) -> tuple[float | None, str | None]:
+    """Convert a dividend to major units, guarding against unit mix-ups.
+
+    On LSE, Yahoo sometimes reports dividends in pounds while prices are in
+    pence. A per-payment yield below 0.05% in pence terms but plausible in
+    pounds is treated as already being in pounds. Implausible values (above
+    25% of the share price) are discarded.
+    """
+    if ref_price <= 0:
+        return None, "no reference price; dividend ignored"
+    note = None
+    if divisor != 1 and value / ref_price < 0.0005 and value * divisor / ref_price <= 0.25:
+        major = value
+        note = "reported in pounds while prices are in pence; used as pounds"
+    else:
+        major = value / divisor
+    if major / (ref_price / divisor) > 0.25:
+        return None, f"implausible dividend ({major:.4f} vs price {ref_price / divisor:.4f}); ignored"
+    return major, note

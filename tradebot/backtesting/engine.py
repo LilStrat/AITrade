@@ -80,7 +80,7 @@ def run_backtest(settings: dict, data: FrameDataView, req: BacktestRequest) -> d
                        benchmark=benchmark, apply_splits=False, record_signals=False,
                        auto_resume_drawdown_after=req.drawdown_auto_resume_sessions)
     symbols = [x for x in req.symbols if not data.history(x).empty]
-    core.prepare(symbols)
+    core.prepare(symbols, from_day=req.start)
 
     bench = data.history(benchmark)
     days = [d for d in bench.index if req.start <= d <= req.end]

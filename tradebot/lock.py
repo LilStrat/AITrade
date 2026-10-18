@@ -33,10 +33,12 @@ class InstanceLock:
         except OSError:
             fh.close()
             raise AlreadyRunning("Another copy of the trading bot is already running on this computer.") from None
-        fh.seek(0)
-        fh.truncate()
-        fh.write(str(os.getpid()))
-        fh.flush()
+        # Never write into the locked file itself (Windows byte-range locks can
+        # make that fail); the PID goes into a separate, informational file.
+        try:
+            self.path.with_suffix(".pid").write_text(str(os.getpid()), encoding="utf-8")
+        except OSError:
+            pass
         self._fh = fh
 
     def release(self) -> None:

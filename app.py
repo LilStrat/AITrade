@@ -313,6 +313,9 @@ def main(argv=None) -> int:
     rs.add_argument("file")
     rs.set_defaults(fn=cmd_restore)
     sub.add_parser("selfcheck").set_defaults(fn=cmd_selfcheck)
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if not argv:
+        argv = ["run"]  # "py app.py" (or double-clicking app.py) starts the dashboard
     args = p.parse_args(argv)
     setup_logging(console=args.cmd not in ("run",))
     try:
@@ -322,5 +325,24 @@ def main(argv=None) -> int:
         return 130
 
 
+def _use_project_venv() -> int | None:
+    """If started with the system Python (e.g. "py app.py"), re-run inside the
+    project's own .venv so the pinned packages are used."""
+    import os
+    import subprocess
+    from pathlib import Path
+    root = Path(__file__).resolve().parent
+    venv_dir = root / ".venv"
+    venv_py = venv_dir / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+    if not venv_py.exists() or Path(sys.prefix).resolve() == venv_dir.resolve():
+        return None
+    env = {**os.environ, "PYTHONUTF8": "1"}
+    try:
+        return subprocess.run([str(venv_py), str(Path(__file__).resolve()), *sys.argv[1:]], env=env).returncode
+    except KeyboardInterrupt:
+        return 130
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    code = _use_project_venv()
+    sys.exit(main() if code is None else code)
